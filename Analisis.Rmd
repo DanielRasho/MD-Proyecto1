@@ -1,0 +1,24 @@
+---
+title: "Proyecto 1"
+author: "Gerardo Pineda 22880, Daniel Rayo"
+date: "2025-01-28"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+# Analisis Exploratorio
+## Resumen del conjunto de datos
+
+
+```{r movies description, echo=FALSE}
+movies <- read.csv("movies.csv")
+summary(movies)
+```
+## Tipo de cada variable
+
+```{r type variables}
+str(movies)
+sapply(movies, class)
+```
