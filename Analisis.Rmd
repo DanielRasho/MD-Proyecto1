@@ -3,22 +3,70 @@ title: "Proyecto 1"
 author: "Gerardo Pineda 22880, Daniel Rayo"
 date: "2025-01-28"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
+
+```{r install librarys and load movies, echo=FALSE}
+library(knitr)
+library(ggplot2)
+movies <- read.csv("movies.csv")
+```
 
 # Analisis Exploratorio
 ## Resumen del conjunto de datos
 
 
 ```{r movies description, echo=FALSE}
-movies <- read.csv("movies.csv")
 summary(movies)
 ```
 ## Tipo de cada variable
 
-```{r type variables}
-str(movies)
-sapply(movies, class)
+```{r variables, echo=FALSE}
+types_table <- data.frame(Variable = names(movies), Tipo = sapply(movies, class))
+kable(types_table)
 ```
+## Varibales cuantitativas (Explicación)
+## Preguntas
+
+### ¿Cuáles son las 10 películas que contaron con más presupuesto?
+
+Las peliculas que tuvieron un mayor presupuesto son
+
+```{r mas presupuesto, echo=FALSE}
+topTen <- movies[order(-movies$budget), c("id", "title", "budget")][1:10, ]
+topTen
+```
+
+### ¿Cuál es la película que más votos tuvo?
+
+```{r most votes, echo=FALSE}
+mostVotes <- movies[order(-movies$voteCount), c("id", "title", "voteCount")]
+mostVoteMovie <- mostVotes[1,]
+```
+La pelicula que mas tuvo votos fue **`r mostVoteMovie$title`** con una cantidad de **`r mostVoteMovie$voteCount`** votos
+
+### ¿Cuántas películas se hicieron en cada año? ¿En qué año se hicieron más películas?
+
+```{r most movies in a year, echo=FALSE}
+movies$releaseDate <- as.Date(movies$releaseDate)
+movies$Año <- format(movies$releaseDate, "%Y")
+moviesPerYear <- aggregate(movies[, c("id")], by=list(movies$Año), FUN=length)
+colnames(moviesPerYear) <- c("Año", "TotalPelículas")
+
+max_year_release <- moviesPerYear[moviesPerYear$TotalPelículas,]
+
+max_total <- subset(moviesPerYear, TotalPelículas == max(TotalPelículas))
+
+ggplot(moviesPerYear, aes(x = Año, y = TotalPelículas, fill = TotalPelículas)) +
+  geom_bar(stat = "identity", color = "black") +
+  scale_fill_gradient(low = "skyblue", high = "darkblue") +
+  theme_minimal() +
+  labs(title = "Películas por Año", x = "Año", y = "Cantidad") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+En el año `r max_total$Año` se publicaron un total de `r max_total$TotalPelículas` peliculas
+
+
