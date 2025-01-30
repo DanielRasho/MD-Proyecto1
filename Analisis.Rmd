@@ -3,9 +3,9 @@ title: "Proyecto 1"
 author: "Gerardo Pineda 22880, Daniel Rayo"
 date: "2025-01-28"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
@@ -16,6 +16,8 @@ library(dplyr)
 library(knitr)
 library(ggplot2)
 library(dplyr)
+library(tidyr)
+Sys.setlocale("LC_ALL", "es_ES.UTF-8")
 movies <- read.csv("movies.csv")
 ```
 
