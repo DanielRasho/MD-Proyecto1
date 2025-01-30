@@ -15,22 +15,32 @@ movies <- read.csv("movies.csv")
 ```
 
 # Analisis Exploratorio
-## Resumen del conjunto de datos
-
-
+## 1. Resumen del conjunto de datos
+Haga una exploración rápida de sus datos, para eso haga un resumen de su conjunto
+de datos.
 ```{r movies description, echo=FALSE}
 summary(movies)
 ```
-## Tipo de cada variable
+## 2. Tipo de cada variable
+Diga el tipo de cada una de las variables (cualitativa ordinal o nominal, cuantitativa
+continua, cuantitativa discreta).
 
 ```{r variables, echo=FALSE}
 types_table <- data.frame(Variable = names(movies), Tipo = sapply(movies, class))
 kable(types_table)
 ```
-## Varibales cuantitativas (Explicación)
-## Preguntas
 
-### ¿Cuáles son las 10 películas que contaron con más presupuesto?
+### 3. Analisis de las variables del dataset
+
+#### Cuantitativas
+
+
+#### Cualitativas
+
+
+### 4. Preguntas sobre  los datos
+  
+**4.1 ¿Cuáles son las 10 películas que contaron con más presupuesto?**
 
 Las peliculas que tuvieron un mayor presupuesto son
 
@@ -39,7 +49,10 @@ topTen <- movies[order(-movies$budget), c("id", "title", "budget")][1:10, ]
 topTen
 ```
 
-### ¿Cuál es la película que más votos tuvo?
+**4.2. ¿Cuáles son las 10 películas que más ingresos tuvieron?**
+
+
+**4.3 ¿Cuál es la película que más votos tuvo?**
 
 ```{r most votes, echo=FALSE}
 mostVotes <- movies[order(-movies$voteCount), c("id", "title", "voteCount")]
@@ -47,7 +60,9 @@ mostVoteMovie <- mostVotes[1,]
 ```
 La pelicula que mas tuvo votos fue **`r mostVoteMovie$title`** con una cantidad de **`r mostVoteMovie$voteCount`** votos
 
-### ¿Cuántas películas se hicieron en cada año? ¿En qué año se hicieron más películas?
+**4.4.  ¿Cuál es la peor película de acuerdo a los votos de todos los usuarios?**
+
+**4.5 ¿Cuántas películas se hicieron en cada año? ¿En qué año se hicieron más películas?**
 
 ```{r most movies in a year, echo=FALSE}
 movies$releaseDate <- as.Date(movies$releaseDate)
@@ -68,5 +83,42 @@ ggplot(moviesPerYear, aes(x = Año, y = TotalPelículas, fill = TotalPelículas)
 ```
 
 En el año `r max_total$Año` se publicaron un total de `r max_total$TotalPelículas` peliculas
+
+**4.6 Cuál es el género principal de las 20 películas más recientes? ¿Cuál es el género principal que predomina en el conjunto de datos? Represéntelo usando un gráfico. ¿A qué género principal pertenecen las películas más largas?**
+
+
+**4.7 ¿Las películas de qué genero principal obtuvieron mayores ganancias?**
+
+**4.8 ¿La cantidad de actores influye en los ingresos de las películas?¿se han hecho películas con más actores en los últimos años?**
+
+**4.9 ¿Es posible que la cantidad de hombres y mujeres en el reparto influya en la popularidad y los ingresos de las películas?**
+
+**4.10 ¿Quiénes son los directores que hicieron las 20 películas mejor calificadas?**
+
+**4.11 ¿Cómo se correlacionan los presupuestos con los ingresos? ¿Los altos presupuestos significan altos ingresos? Haga los gráficos que necesite, histograma, diagrama de dispersión**
+
+**4.12 Se asocian ciertos meses de lanzamiento con mejores ingresos?**
+
+**4.13 ¿En qué meses se han visto los lanzamientos con mejores ingresos? ¿cuantas películas, en promedio, se han lanzado por mes?**
+
+**4.14 ¿Cómo se correlacionan las calificaciones con el éxito comercial?**
+
+**4.15 ¿Qué estrategias de marketing, como videos promocionales o páginas oficiales, generan mejores resultados?**
+
+**4.16 ¿La popularidad del elenco está directamente correlacionada con el éxito de taquilla?**
+
+### Preguntas Extras
+
+**1. <inserte pregunta>**
+
+**2. <inserte pregunta>**
+
+**3. <inserte pregunta>**
+
+**4. <inserte pregunta>**
+
+**5. <inserte pregunta>**
+
+**6. <inserte pregunta>**
 
 
