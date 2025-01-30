@@ -11,6 +11,7 @@ output:
 ```{r install librarys and load movies, echo=FALSE}
 library(knitr)
 library(ggplot2)
+library(dplyr)
 movies <- read.csv("movies.csv")
 ```
 
@@ -31,12 +32,71 @@ kable(types_table)
 ```
 
 ### 3. Analisis de las variables del dataset
+```{r}
+head(movies)
+```
 
 #### Cuantitativas
+Usando la prueba de Shapiro-will en las variables cuantitativas utilizando un 0.05 de confianza, podemos verificar que todas las variables fallan la prueba, teniendo valores que se pasan del limite de tolerania de 0.05.
+```{r}
+# Function to check normality with random sampling for large datasets
+check_normality <- function(variable) {
+  variable <- na.omit(variable)  # Remove NA values
+  n <- length(variable)          # Count valid observations
+  
+  # If too few values, return a message
+  if (n < 3) {
+    return(c(Normalidad = "No se puede evaluar (muy pocos datos)", P_Value = NA))
+  }
+  
+  # If more than 5000 values, take a random sample of 5000
+  if (n > 5000) {
+    variable <- sample(variable, 5000)
+  }
+  
+  # Apply Shapiro-Wilk test
+  test <- shapiro.test(variable)
+  p_value <- test$p.value
+  normal <- ifelse(p_value > 0.05, "Sí", "No")  # Determine normality
+  
+  return(c(esNormal = normal, P_Value = p_value))
+}
+cuantitative_variables <- movies[, c("popularity", "budget", "revenue", "runtime","voteCount", "genresAmount", "productionCoAmount", "productionCountriesAmount", "actorsAmount")]
+cuantitative_variables$castWomenAmount <- as.numeric(movies$castWomenAmount)
+cuantitative_variables$castMenAmount <- as.numeric(movies$castMenAmount)
 
+# Apply function to each column and convert results to a data frame
+results <- as.data.frame(t(sapply(cuantitative_variables, check_normality)))
+
+# Print the table
+print(results)
+```
 
 #### Cualitativas
+Viendod los analisis de frecuencia se puede ver a simple vista que las peliculas de Drama son las mas cómunes, la mayoría fueron producidas por Paramount Studios. El director más frecuente es Steven Spielberg y el idioma prediminante es el inglés.
+```{r}
+# Get only categorical variables (assuming they are factors or characters)
+categorical_vars <- movies[, c("genres", "homePage", "productionCompany", "productionCompanyCountry","productionCountry", "director", "originalTitle", "title", "originalLanguage" , "releaseDate")]
 
+# Function to generate a frequency table for each categorical variable
+print_frequency_tables <- function(data) {
+  for (var in colnames(data)) {
+    
+    # Create frequency table
+    freq_table <- table(data[[var]]) %>% as.data.frame()
+    colnames(freq_table) <- c(var, "Frequency")
+    
+    # Order by Frequency in descending order (closing parenthesis added here)
+    freq_table <- freq_table %>% arrange(desc(Frequency))
+    
+    # Print as a formatted table
+    print(freq_table, row.names = FALSE)
+  }
+}
+
+# Call the function
+print_frequency_tables(categorical_vars)
+```
 
 ### 4. Preguntas sobre  los datos
   
