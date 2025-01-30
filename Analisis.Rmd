@@ -163,7 +163,7 @@ ggplot(moviesPerYear, aes(x = Anio, y = TotalPeliculas, fill = TotalPeliculas)) 
   theme(axis.text.x = element_text(angle = 90, hjust = 1, size=5))
 ```
 
-En el año **`r max_total$Año`** se publicaron un total de **`r max_total$TotalPelículas`** peliculas
+En el año **`r max_total$Anio`** se publicaron un total de **`r max_total$TotalPeliculas`** peliculas
 
 **4.6 Cuál es el género principal de las 20 películas más recientes? ¿Cuál es el género principal que predomina en el conjunto de datos? Represéntelo usando un gráfico. ¿A qué género principal pertenecen las películas más largas?**
 
@@ -278,7 +278,14 @@ subsetMonthRevenue <- subset(movies, select = c("Mes", "revenue"))
 
 mostMonthRevenue <- aggregate(subsetMonthRevenue[, c("revenue")], by=list(subsetMonthRevenue$Mes), FUN=mean)
 
+LengthMonthFilms <- aggregate(subsetMonthRevenue[, c("revenue")], by=list(subsetMonthRevenue$Mes), FUN=length)
+
+
 colnames(mostMonthRevenue) <- c("Mes", "Ingresos Promedio")
+colnames(LengthMonthFilms) <- c("Mes", "CantidadPeliculas")
+
+promMonthMovies <- mean(LengthMonthFilms$CantidadPeliculas)
+
 
 mostMonthRevenue <- mostMonthRevenue[order(-mostMonthRevenue$`Ingresos Promedio`), ][1,]
 mostMonthRevenue$"Ingresos Promedio" <- format(mostMonthRevenue$"Ingresos Promedio", big.mark = ",", scientific = FALSE)
@@ -288,9 +295,32 @@ mostMonthRevenue$"Ingresos Promedio" <- format(mostMonthRevenue$"Ingresos Promed
 
 En el mes en el que se presentan mejores ingresos es `r mostMonthRevenue$Mes` con un total de ingresos promedio de `r mostMonthRevenue$"Ingresos Promedio"` $
 
+Por mes se han sacado `r promMonthMovies` en promedio de los ultimos 30 años
+
+
 **4.14 ¿Cómo se correlacionan las calificaciones con el éxito comercial?**
 
 **4.15 ¿Qué estrategias de marketing, como videos promocionales o páginas oficiales, generan mejores resultados?**
+
+
+```{r marketing strategy, echo=FALSE}
+
+
+subsetHomePage <- subset(movies,select = c("homePage", "revenue"))
+
+meanHasURL <- aggregate(
+  subsetHomePage[, "revenue"], 
+  by = list(TienePagina = !is.na(subsetHomePage$homePage)),
+  FUN = mean,
+)
+
+subsetVideos <- subset(movies,select = c("video", "revenue"))
+
+meanHasVideo <- aggregate(subsetVideos[, c("revenue")], by=list(TineVideo = subsetVideos[, "video"] == TRUE ), FUN=mean) 
+
+colnames(meanHasVideo) <- c("Tiene Video", "Promedio de ingresos")
+
+```
 
 **4.16 ¿La popularidad del elenco está directamente correlacionada con el éxito de taquilla?**
 
