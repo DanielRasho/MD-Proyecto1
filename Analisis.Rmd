@@ -76,45 +76,60 @@ print(results)
 ```
 
 #### Cualitativas
-Viendod los analisis de frecuencia se puede ver a simple vista que las peliculas de Drama son las mas cómunes, la mayoría fueron producidas por Paramount Studios. El director más frecuente es Steven Spielberg y el idioma prediminante es el inglés.
+Viendo las tablas de frecuencia se puede ver a simple vista que las peliculas de Drama son las mas cómunes, la mayoría fueron producidas por Paramount Studios. El director más frecuente es Steven Spielberg y el idioma prediminante es el inglés.
 ```{r}
 # Function to clean strings (convert to valid UTF-8)
 clean_strings <- function(x) {
-  # Convert to UTF-8 and remove non-UTF-8 characters
   x <- iconv(x, to = "UTF-8", sub = "byte")  # Convert characters to UTF-8
   x <- gsub("[^[:print:]]", "", x)  # Remove non-printable characters
   return(x)
 }
 
-# Get only categorical variables (assuming they are factors or characters)
-categorical_vars <- movies[, c("genres", "homePage", "productionCompany", 
-                               "productionCompanyCountry", "productionCountry", 
-                               "director", "originalTitle", "title", 
-                               "originalLanguage", "releaseDate")]
-
-# Clean the categorical variables
-categorical_vars <- categorical_vars %>%
+# Get only categorical variables and clean them
+categorical_vars <- movies %>%
+  select(homePage, productionCompany, productionCompanyCountry, productionCountry,
+         originalTitle, title, originalLanguage, releaseDate) %>%
   mutate(across(everything(), clean_strings))
 
+# Separate rows for multi-valued columns & clean them
+categorical_vars1 <- movies %>%
+  select(genres) %>%
+  separate_rows(genres, sep = "\\|") %>%
+  mutate(across(everything(), clean_strings))
+
+categorical_vars2 <- movies %>%
+  select(director) %>%
+  separate_rows(director, sep = "\\|") %>%
+  mutate(across(everything(), clean_strings))
+
+categorical_vars3 <- movies %>%
+  select(actors) %>%
+  separate_rows(actors, sep = "\\|") %>%
+  mutate(across(everything(), clean_strings))
+
+# Combine all categorical variables into one list
+all_categorical_vars <- list(categorical_vars, categorical_vars1, categorical_vars2, categorical_vars3)
+
 # Function to generate and print a frequency table for each categorical variable
-print_frequency_tables <- function(data) {
-  for (var in colnames(data)) {
-    
-    # Create frequency table
-    freq_table <- table(data[[var]]) %>% as.data.frame()
-    colnames(freq_table) <- c(var, "Frequency")
-    
-    # Order by Frequency in descending order
-    freq_table <- freq_table %>% arrange(desc(Frequency))
-    
-    # Print the frequency table using knitr::kable() for plain rendering
-    print(kable(head(freq_table), caption = paste("Frequency Table for", var)))
+print_frequency_tables <- function(data_list) {
+  for (data in data_list) {
+    for (var in colnames(data)) {
+      
+      # Create frequency table
+      freq_table <- table(data[[var]]) %>% as.data.frame()
+      colnames(freq_table) <- c(var, "Frequency")
+      
+      # Order by Frequency in descending order
+      freq_table <- freq_table %>% arrange(desc(Frequency))
+      
+      # Print the frequency table using knitr::kable() for better rendering
+      print(kable(head(freq_table), caption = paste("Frequency Table for", var)))
+    }
   }
 }
 
 # Call the function
-print_frequency_tables(categorical_vars)
-
+print_frequency_tables(all_categorical_vars)
 ```
 
 ### 4. Preguntas sobre  los datos
@@ -131,7 +146,11 @@ kable(topTen)
 ```
 
 **4.2. ¿Cuáles son las 10 películas que más ingresos tuvieron?**
-
+De acuerdo al set de datos estas son las películas con mas ingresos : 
+```{r}
+mostRentableMovies <- movies[order(movies$revenue, decreasing = TRUE),]
+head(mostRentableMovies[, c("title", "revenue")], n = 10)
+```
 
 **4.3 ¿Cuál es la película que más votos tuvo?**
 
@@ -142,6 +161,11 @@ mostVoteMovie <- mostVotes[1,]
 La pelicula que mas tuvo votos fue **`r mostVoteMovie$title`** con una cantidad de **`r mostVoteMovie$voteCount`** votos
 
 **4.4.  ¿Cuál es la peor película de acuerdo a los votos de todos los usuarios?**
+```{r less votes, echo=FALSE}
+leastVotedMovies <- movies[order(-movies$voteCount, decreasing = TRUE), c("id", "title", "voteCount")]
+leastVotedMovie <- leastVotedMovies[1,]
+```
+La película con menos votos es **`r leastVotedMovie$title`** con una cantidad de **`r leastVotedMovie$voteCount`** votos
 
 **4.5 ¿Cuántas películas se hicieron en cada año? ¿En qué año se hicieron más películas?**
 
@@ -166,7 +190,39 @@ ggplot(moviesPerYear, aes(x = Anio, y = TotalPeliculas, fill = TotalPeliculas)) 
 En el año **`r max_total$Anio`** se publicaron un total de **`r max_total$TotalPeliculas`** peliculas
 
 **4.6 Cuál es el género principal de las 20 películas más recientes? ¿Cuál es el género principal que predomina en el conjunto de datos? Represéntelo usando un gráfico. ¿A qué género principal pertenecen las películas más largas?**
+El drama es el genero principal con 3789 ocurrencias. Lo cual también coincide con las peliculas más recientes que tienen que ver con drama.
 
+```{r}
+movies %>% 
+  select(title, releaseDate, genres) %>%  # Select only 'title' and 'releaseDate' columns
+  arrange(desc(releaseDate)) %>%  # Order by 'releaseDate' in descending order
+  head(n = 20)  # Display the first few rows
+```
+
+```{r}
+# Create frequency table
+genres_freq <- movies %>%
+  separate_rows(genres, sep = "\\|") %>%  # Split the genres column by '|'
+  count(genres) %>%                      # Count frequencies of each genre
+  rename(Genre = genres, Frequency = n) %>%   # Rename columns
+  arrange(desc(Frequency))
+colnames(genres_freq) <- c("Genres", "Frequency")
+
+genres_freq
+
+# Order by Frequency in descending order
+freq_table <- genres_freq %>% arrange(desc(Frequency))
+
+freq_table
+    
+ggplot(freq_table, aes(x = reorder(Genres, Frequency), y = Frequency, fill = genres)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Frecuencia de generos",
+       x = "Géneros",
+       y = "Frecuencia") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
 
 **4.7 ¿Las películas de qué genero principal obtuvieron mayores ganancias?**
 
@@ -200,15 +256,32 @@ profitGenre$Ganancia <- format(profitGenre$Ganancia, big.mark = ",", scientific 
 ```
 
 
-Las peliculas del genero **`r profitGenre[1,]$Generos`** fuerón las que presentarón una mayor ganancia teniendo en total una ganacia de **`r profitGenre[1,]$Ganancia`** $
+Las películas del genero **`r profitGenre[1,]$Generos`** fuerón las que presentarón una mayor ganancia teniendo en total una ganacia de **`r profitGenre[1,]$Ganancia`** $
 
-**4.8 ¿La cantidad de actores influye en los ingresos de las películas?¿se han hecho películas con más actores en los últimos años?**
+**4.8 ¿La cantidad de actores influye en los ingresos de las películas? ¿se han hecho películas con más actores en los últimos años?**
+Al revisar la relación entre ambos sets de datos, se puede indicar que no hay relación entre las variables al, al tener un coeficiente de correlación de Pearson del -2%, es decir, aproximadamente la cantidad de actores solo influye en un 2% y los ingresos generados. 
+```{r}
+numActorsRevenueCor <- cor(movies$actorsAmount, movies$revenue, use = "complete.obs")
+ggplot(movies, aes(x = actorsAmount, y = revenue)) +
+  geom_point(alpha = 0.5, color = "blue") +  # Scatter plot with transparency
+  geom_smooth(method = "lm", color = "red", se = FALSE) +  # Linear regression line
+  labs(title = "Correlation between Budget and Revenue",
+       x = "Numero de actores",
+       y = "Ingresos",
+       subtitle = paste("Correlation Coefficient: r =", round(numActorsRevenueCor, 2))
+       ) +
+  theme_minimal()
+```
+
+```{r}
+
+```
 
 **4.9 ¿Es posible que la cantidad de hombres y mujeres en el reparto influya en la popularidad y los ingresos de las películas?**
 
 ```{r men and women, echo=FALSE}
 
-popRevMovies <- aggregate(movies[, c("popularity", "revenue")], by=list(MasHombres = movies[, "castMenAmount"] > movies[,"castWomenAmount"]), FUN=mean) 
+popRevMovies <- aggregate(movies[, c("popularity", "revenue")], by=list(MasHombres = movies[, "castMenAmount"] > movies[,"castWomenAmount"]), FUN=mean)
 
 kable(popRevMovies)
 
@@ -217,9 +290,14 @@ kable(popRevMovies)
 Como se puede evidenciar en la tabla las peliculas que tienen una mayor cantidad de hombres son mas populares y tienen una mayor ganancia
 
 **4.10 ¿Quiénes son los directores que hicieron las 20 películas mejor calificadas?**
+```{r}
+calificationByPopularity <- movies[order(-movies$voteAvg), c("id", "title", "director")]
+calificationByPopularity$title <- clean_strings(calificationByPopularity$title)
+calificationByPopularity$director <- clean_strings(calificationByPopularity$director)
+kable(head(calificationByPopularity, n=20))
+```
 
 **4.11 ¿Cómo se correlacionan los presupuestos con los ingresos? ¿Los altos presupuestos significan altos ingresos?**
-
 
 ```{r budget range, echo=FALSE, warning=FALSE}
 
@@ -269,6 +347,10 @@ Como se puede evidenciar apartir de la Grafica 1, cuando el rango de presupuesto
 
 
 **4.12 Se asocian ciertos meses de lanzamiento con mejores ingresos?**
+
+```{r}
+
+```
 
 **4.13 ¿En qué meses se han visto los lanzamientos con mejores ingresos? ¿cuantas películas, en promedio, se han lanzado por mes?**
 
