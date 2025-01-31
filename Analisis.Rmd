@@ -3,15 +3,15 @@ title: "Proyecto 1"
 author: "Gerardo Pineda 22880, Daniel Rayo"
 date: "2025-01-28"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
-```{r install librarys and load movies, echo=FALSE, warning=FALSE}
+```{r install librarys and load movies, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
 library(dplyr)
 library(knitr)
 library(ggplot2)
@@ -293,15 +293,18 @@ mostMonthRevenue$"Ingresos Promedio" <- format(mostMonthRevenue$"Ingresos Promed
 
 ```
 
-En el mes en el que se presentan mejores ingresos es `r mostMonthRevenue$Mes` con un total de ingresos promedio de `r mostMonthRevenue$"Ingresos Promedio"` $
+En el mes en el que se presentan mejores ingresos es **`r mostMonthRevenue$Mes`** con un total de ingresos promedio de **`r mostMonthRevenue$"Ingresos Promedio"`** $
 
-Por mes se han sacado `r promMonthMovies` en promedio de los ultimos 30 años
+Por mes se han sacado **`r promMonthMovies`** en promedio de los ultimos 30 años
 
 
 **4.14 ¿Cómo se correlacionan las calificaciones con el éxito comercial?**
 
 **4.15 ¿Qué estrategias de marketing, como videos promocionales o páginas oficiales, generan mejores resultados?**
 
+\begin{center}
+    \LARGE \textbf{Cuadro 1. Tiene Pagina web o no vs Ingresos}
+\end{center}
 
 ```{r marketing strategy, echo=FALSE}
 
@@ -318,19 +321,109 @@ subsetVideos <- subset(movies,select = c("video", "revenue"))
 
 meanHasVideo <- aggregate(subsetVideos[, c("revenue")], by=list(TineVideo = subsetVideos[, "video"] == TRUE ), FUN=mean) 
 
-colnames(meanHasVideo) <- c("Tiene Video", "Promedio de ingresos")
+colnames(meanHasVideo) <- c("Tiene Video", "Promedio de ingresos (dolares)")
+colnames(meanHasURL) <- c("Tiene Pagina", "Promedio de ingresos (dolares)")
+
+kable(meanHasURL)
+
 
 ```
+\begin{center}
+    \LARGE \textbf{Cuadro 1. Tiene Video vs Ingresos}
+\end{center}
+```{r}
+kable(meanHasVideo)
+```
+
+Por lo que se puede evidenciar en los cuadros, la estrategia de marketing que genera mejores resultados es el tener una pagina oficial. Porque esta replica los resultados promedio que al no tenerlo, mientras que tener video no impacta en el promedio de ingresos.
+
 
 **4.16 ¿La popularidad del elenco está directamente correlacionada con el éxito de taquilla?**
 
 ### Preguntas Extras
 
-**1. <inserte pregunta>**
+**1. ¿Las películas con mayor presupuesto tienen mejores calificaciones?**
 
-**2. <inserte pregunta>**
+\begin{center}
+    \LARGE \textbf{Cuadro 3. Presupuestos ordenados de mayor a menor con la cantidad de votos}
+\end{center}
 
-**3. <inserte pregunta>**
+```{r budget-ranking, echo=FALSE}
+
+subsetBudgetRanking <- subset(movies,select = c("budget", "voteAvg"))
+
+HigherBudgets <- subsetBudgetRanking[order(-subsetBudgetRanking$budget),]
+
+HigherBudgets$budget <- format(HigherBudgets$budget, big.mark = ",", scientific = FALSE)
+
+HigherVoteAvg <- subset(subsetBudgetRanking, budget > 5000)
+HigherVoteAvg <- HigherVoteAvg[order(-HigherVoteAvg$voteAvg), ]
+
+colnames(HigherBudgets) <- c("Presupuesto", "Promedio de votos")
+colnames(HigherVoteAvg) <- c("Presupuesto","Promedio de votos")
+
+HigherBudgets <- HigherBudgets[1:5,]
+HigherVoteAvg <- HigherVoteAvg[1:5,]
+
+kable(HigherBudgets)
+
+```
+
+\begin{center}
+    \LARGE \textbf{Cuadro 4. Votos ordenados de mayor a menor con presupuesto mayor a 5000 dolares}
+\end{center}
+
+```{r budget-ranking-v2, echo=FALSE}
+
+kable(HigherVoteAvg)
+
+```
+
+Se tomo en cuenta un limite minimo de presupuesto de 5000 dolares porque las peliculas no tan conocidas que no tenian presupuesto no pueden ser comparadas con peliculas que tuvieras muchos presupuestos.
+
+Comparando ambas tablas el presupuesto no influye directamente en los votos que recibe cada película, no hay evidencia que afirme esto.
+
+**2. ¿Las películas con mayor popularidad tienen más ingresos?**
+
+\begin{center}
+    \LARGE \textbf{Cuadro 5. Ingresos vs Popularidad}
+\end{center}
+
+```{r popularity-revenue, echo=FALSE}
+correlation <- cor(movies$popularity, movies$revenue, use = "complete.obs")
+ggplot(movies, aes(x = popularity, y = revenue)) +
+  geom_point(alpha = 0.5, color = "blue") +  # Puntos dispersos
+  geom_smooth(method = "lm", color = "red", se = FALSE) +  # Línea de tendencia
+  theme_minimal() +
+  labs(title = "Relación entre Popularidad e Ingresos",
+       x = "Popularidad",
+       y = "Ingresos (USD)")
+```
+
+Como se puede evidenciar en la Grafica no existe ninguna relación entre popularidad y el ingreso, teniendo una correlacion de `r correlation` indicando que la popularidad no es un buen predictor de ingresos.
+
+**3. ¿Cuáles son los países que producen más películas?**
+
+```{r county per movies,echo=FALSE}
+movies_productionCountry <- subset(movies, productionCountry != "" & !is.na(productionCountry))
+country_count <- table(movies_productionCountry$productionCountry)
+country_count <- as.data.frame(country_count)
+colnames(country_count) <- c("Pais", "TotalPeliculas")
+
+country_count <- country_count[order(-country_count$TotalPeliculas), ]
+
+ggplot(head(country_count, 10), aes(x = reorder(Pais, TotalPeliculas), y = TotalPeliculas)) +
+  geom_bar(stat = "identity", fill = "steelblue", color = "black") +
+  theme_minimal() +
+  labs(title = "Top 10 Países con Más Producciones Cinematográficas",
+       x = "País",
+       y = "Cantidad de Películas") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+Como se puede evidenciar **`r country_count[1,]$Pais`** es el pais con mas producciones de peliculas tenindo un total de **`r country_count[1,]$TotalPeliculas`**
 
 **4. <inserte pregunta>**
 
