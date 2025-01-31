@@ -3,9 +3,9 @@ title: "Proyecto 1"
 author: "Gerardo Pineda 22880, Daniel Rayo"
 date: "2025-01-28"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
@@ -190,13 +190,14 @@ ggplot(moviesPerYear, aes(x = Anio, y = TotalPeliculas, fill = TotalPeliculas)) 
 En el año **`r max_total$Anio`** se publicaron un total de **`r max_total$TotalPeliculas`** peliculas
 
 **4.6 Cuál es el género principal de las 20 películas más recientes? ¿Cuál es el género principal que predomina en el conjunto de datos? Represéntelo usando un gráfico. ¿A qué género principal pertenecen las películas más largas?**
-El drama es el genero principal con 3789 ocurrencias. Lo cual también coincide con las peliculas más recientes que tienen que ver con drama.
+El drama es el género principal con 3789 ocurrencias. Lo cual también coincide con las peliculas más recientes que tienen que ver con drama. `r `
 
+**Géneros de peliculas mas recientes: **
 ```{r}
 movies %>% 
-  select(title, releaseDate, genres) %>%  # Select only 'title' and 'releaseDate' columns
-  arrange(desc(releaseDate)) %>%  # Order by 'releaseDate' in descending order
-  head(n = 20)  # Display the first few rows
+  select(title, releaseDate, genres) %>%
+  arrange(desc(releaseDate)) %>% 
+  head(n = 20)
 ```
 
 ```{r}
@@ -207,22 +208,22 @@ genres_freq <- movies %>%
   rename(Genre = genres, Frequency = n) %>%   # Rename columns
   arrange(desc(Frequency))
 colnames(genres_freq) <- c("Genres", "Frequency")
-
-genres_freq
-
-# Order by Frequency in descending order
-freq_table <- genres_freq %>% arrange(desc(Frequency))
-
-freq_table
     
-ggplot(freq_table, aes(x = reorder(Genres, Frequency), y = Frequency, fill = genres)) +
+ggplot(genres_freq, aes(x = reorder(Genres, Frequency), y = Frequency, fill = Genres)) +
   geom_bar(stat = "identity") +
-  labs(title = "Frecuencia de generos",
+  labs(title = "Frecuencia de géneros",
        x = "Géneros",
        y = "Frecuencia") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
+
+Por último el género de la película más larga es Documental:
+```{r}
+longestMovie <- movies[which.max(movies$runtime), ]
+longestMovie[, c("title", "runtime", "genres")]
+```
+
 
 **4.7 ¿Las películas de qué genero principal obtuvieron mayores ganancias?**
 
