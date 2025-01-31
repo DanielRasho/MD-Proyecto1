@@ -371,8 +371,25 @@ Como se puede evidenciar apartir de la Grafica 1, cuando el rango de presupuesto
 **4.12 Se asocian ciertos meses de lanzamiento con mejores ingresos?**
 
 ```{r}
+avgRevenueByMonth <- movies %>%
+  mutate(month = factor(month(as.Date(releaseDate, format = "%Y-%m-%d")), 
+                        levels = 1:12, 
+                        labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))) %>%
+  group_by(month) %>%
+  summarise(total_revenue = mean(revenue, na.rm = TRUE))
+
+ggplot(avgRevenueByMonth, aes(x = month, y = total_revenue, fill = month)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Ingresos Promedio por Mes",
+       x = "Mes",
+       y = "Ingresos Promedio") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
+
+Se puede observar que hay meses 5 meses con una ganancia promedio superiores a los $50,000,000, estos meses son Mayo, Junio, Julio y Noviembre y Diciembre. Una posible causa es que coinciden con epocas de vacaciones de ciclos educativos.
 
 **4.13 ¿En qué meses se han visto los lanzamientos con mejores ingresos? ¿cuantas películas, en promedio, se han lanzado por mes?**
 
