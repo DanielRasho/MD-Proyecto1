@@ -352,7 +352,7 @@ ggplot(movies_long, aes(x = reorder(title, Valor), y = Valor, color = Tipo, grou
 
 ```
 
-Como se puede evidenciar apartir de la Grafica 1, cuando el rango de presupuesto es mas elevado este suele precentar una mayor cantidad de ingres. Al igual como se ve en la Grafica 2, que en la mayoria de peliculas, se puede evidenciar que tener un presupuesto elevado significa tener mas ingresos. 
+Como se puede evidenciar apartir de la Grafica 1, cuando el rango de presupuesto es mas elevado este suele presentar una mayor cantidad de ingres. Al igual como se ve en la Grafica 2, que en la mayoria de peliculas, se puede evidenciar que tener un presupuesto elevado significa tener mas ingresos. 
 
 
 **4.12 Se asocian ciertos meses de lanzamiento con mejores ingresos?**
