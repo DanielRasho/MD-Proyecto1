@@ -1,6 +1,6 @@
 ---
 title: "Proyecto 1"
-author: "Gerardo Pineda 22880, Daniel Rayo"
+author: "Gerardo Pineda 22880, Daniel Rayo 22933"
 date: "2025-01-28"
 output:
   html_document:
@@ -29,7 +29,7 @@ movies <- read.csv("movies.csv")
 Haga una exploración rápida de sus datos, para eso haga un resumen de su conjunto
 de datos.
 ```{r movies description, echo=FALSE}
-summary(movies)
+kable(t(summary(movies)))
 ```
 ## 2. Tipo de cada variable
 Diga el tipo de cada una de las variables (cualitativa ordinal o nominal, cuantitativa
@@ -48,15 +48,14 @@ Usando la prueba de Shapiro-will en las variables cuantitativas utilizando un 0.
 ```{r}
 # Function to check normality with random sampling for large datasets
 check_normality <- function(variable) {
-  variable <- na.omit(variable)  # Remove NA values
-  n <- length(variable)          # Count valid observations
+  variable <- na.omit(variable)  
+  n <- length(variable)          
   
-  # If too few values, return a message
+
   if (n < 3) {
     return(c(Normalidad = "No se puede evaluar (muy pocos datos)", P_Value = NA))
   }
   
-  # If more than 5000 values, take a random sample of 5000
   if (n > 5000) {
     variable <- sample(variable, 5000)
   }
@@ -64,7 +63,7 @@ check_normality <- function(variable) {
   # Apply Shapiro-Wilk test
   test <- shapiro.test(variable)
   p_value <- test$p.value
-  normal <- ifelse(p_value > 0.05, "Sí", "No")  # Determine normality
+  normal <- ifelse(p_value > 0.05, "Sí", "No")
   
   return(c(esNormal = normal, P_Value = p_value))
 }
@@ -72,30 +71,29 @@ cuantitative_variables <- movies[, c("popularity", "budget", "revenue", "runtime
 cuantitative_variables$castWomenAmount <- suppressWarnings(as.numeric(movies$castWomenAmount))
 cuantitative_variables$castMenAmount <- suppressWarnings(as.numeric(movies$castMenAmount))
 
-# Apply function to each column and convert results to a data frame
+
 results <- as.data.frame(t(sapply(cuantitative_variables, check_normality)))
 
-# Print the table
-print(results)
+kable(results)
 ```
 
 #### Cualitativas
 Viendo las tablas de frecuencia se puede ver a simple vista que las peliculas de Drama son las mas cómunes, la mayoría fueron producidas por Paramount Studios. El director más frecuente es Steven Spielberg y el idioma prediminante es el inglés.
 ```{r}
-# Function to clean strings (convert to valid UTF-8)
+
 clean_strings <- function(x) {
-  x <- iconv(x, to = "UTF-8", sub = "byte")  # Convert characters to UTF-8
-  x <- gsub("[^[:print:]]", "", x)  # Remove non-printable characters
+  x <- iconv(x, to = "UTF-8", sub = "byte") 
+  x <- gsub("[^[:print:]]", "", x)  
   return(x)
 }
 
-# Get only categorical variables and clean them
+
 categorical_vars <- movies %>%
   select(homePage, productionCompany, productionCompanyCountry, productionCountry,
          originalTitle, title, originalLanguage, releaseDate) %>%
   mutate(across(everything(), clean_strings))
 
-# Separate rows for multi-valued columns & clean them
+
 categorical_vars1 <- movies %>%
   select(genres) %>%
   separate_rows(genres, sep = "\\|") %>%
@@ -111,10 +109,9 @@ categorical_vars3 <-  movies %>%
   separate_rows(actors, sep = "\\|") %>%
   mutate(across(everything(), clean_strings))
 
-# Combine all categorical variables into one list
+
 all_categorical_vars <- list(categorical_vars, categorical_vars1, categorical_vars2, categorical_vars3)
 
-# Function to generate and print a frequency table for each categorical variable
 print_frequency_tables <- function(data_list) {
   for (data in data_list) {
     for (var in colnames(data)) {
@@ -126,13 +123,11 @@ print_frequency_tables <- function(data_list) {
       # Order by Frequency in descending order
       freq_table <- freq_table %>% arrange(desc(Frequency))
       
-      # Print the frequency table using knitr::kable() for better rendering
       print(kable(head(freq_table), caption = paste("Frequency Table for", var)))
     }
   }
 }
 
-# Call the function
 print_frequency_tables(all_categorical_vars)
 ```
 
@@ -198,18 +193,22 @@ El drama es el género principal con 3789 ocurrencias. Lo cual también coincide
 
 **Géneros de peliculas mas recientes: **
 ```{r}
-movies %>% 
+# Convert text columns to UTF-8
+latest_movies <- movies %>%
   select(title, releaseDate, genres) %>%
-  arrange(desc(releaseDate)) %>% 
-  head(n = 20)
+  arrange(desc(releaseDate)) %>%
+  head(n = 20) %>%
+  mutate(across(where(is.character), ~ iconv(., from = "", to = "UTF-8", sub = "byte")))
+
+# Print with kable
+kable(latest_movies)
 ```
 
 ```{r}
-# Create frequency table
 genres_freq <- movies %>%
-  separate_rows(genres, sep = "\\|") %>%  # Split the genres column by '|'
-  count(genres) %>%                      # Count frequencies of each genre
-  rename(Genre = genres, Frequency = n) %>%   # Rename columns
+  separate_rows(genres, sep = "\\|") %>%  
+  count(genres) %>%                      
+  rename(Genre = genres, Frequency = n) %>%  
   arrange(desc(Frequency))
 colnames(genres_freq) <- c("Genres", "Frequency")
     
@@ -233,8 +232,8 @@ longestMovie[, c("title", "runtime", "genres")]
 
 ```{r gains, echo=FALSE}
 most_profitable_genre <- movies %>%
-  separate_rows(genres, sep = "\\|") %>%  # Splitting multiple genres
-  mutate(profit = revenue - budget) %>%  # Calculate profit
+  separate_rows(genres, sep = "\\|") %>% 
+  mutate(profit = revenue - budget) %>%  
   group_by(genres) %>%
   summarise(avg_profit = mean(profit, na.rm = TRUE)) %>%
   arrange(desc(avg_profit)) %>%
@@ -252,8 +251,8 @@ Al revisar la relación entre ambos sets de datos, se puede indicar que no hay r
 ```{r}
 numActorsRevenueCor <- cor(movies$actorsAmount, movies$revenue, use = "complete.obs")
 ggplot(movies, aes(x = actorsAmount, y = revenue)) +
-  geom_point(alpha = 0.5, color = "blue") +  # Scatter plot with transparency
-  geom_smooth(method = "lm", color = "red", se = FALSE) +  # Linear regression line
+  geom_point(alpha = 0.5, color = "blue") +  
+  geom_smooth(method = "lm", color = "red", se = FALSE) + 
   labs(title = "Correlación entre número de actores y ingresos",
        x = "Numero de actores",
        y = "Ingresos",
@@ -266,14 +265,14 @@ También se puede observar que a partir del año 2000, la cantidad de actores pr
 
 ```{r}
 movies_by_year <- movies %>%
-  mutate(year = year(as.Date(releaseDate, format = "%Y-%m-%d"))) %>%  # Extract year
-  group_by(year) %>%  # Group by year
-  summarise(total_actors = mean(actorsAmount, na.rm = TRUE)) %>%  # Sum actorsAmount
-  arrange(desc(year))  # Sort by year (newest first)
+  mutate(year = year(as.Date(releaseDate, format = "%Y-%m-%d"))) %>%  
+  group_by(year) %>% 
+  summarise(total_actors = mean(actorsAmount, na.rm = TRUE)) %>%  # 
+  arrange(desc(year)) 
 
 ggplot(movies_by_year, aes(x = year, y = total_actors)) +
-  geom_line(color = "blue", size = 1) +  # Line plot
-  geom_point(color = "red", size = 2) +  # Add points to highlight each year
+  geom_line(color = "blue", size = 1) +  
+  geom_point(color = "red", size = 2) +  
   labs(title = "Evolucion historica de cantidad de actores en peliculas",
        x = "Año",
        y = "Numero promedio de actores por película") +
@@ -352,7 +351,7 @@ ggplot(movies_long, aes(x = reorder(title, Valor), y = Valor, color = Tipo, grou
 
 ```
 
-Como se puede evidenciar apartir de la Grafica 1, cuando el rango de presupuesto es mas elevado este suele presentar una mayor cantidad de ingres. Al igual como se ve en la Grafica 2, que en la mayoria de peliculas, se puede evidenciar que tener un presupuesto elevado significa tener mas ingresos. 
+Como se puede evidenciar apartir de la Grafica 1, cuando el rango de presupuesto es mas elevado este suele presentar una mayor cantidad de ingresos. Al igual como se ve en la Grafica 2, que en la mayoria de películas, se puede evidenciar que tener un presupuesto elevado significa tener mas ingresos. 
 
 
 **4.12 Se asocian ciertos meses de lanzamiento con mejores ingresos?**
@@ -376,9 +375,9 @@ ggplot(avgRevenueByMonth, aes(x = month, y = total_revenue, fill = month)) +
 
 ```
 
-Se puede observar que hay meses 5 meses con una ganancia promedio superiores a los $50,000,000, estos meses son Mayo, Junio, Julio y Noviembre y Diciembre. Una posible causa es que coinciden con epocas de vacaciones de ciclos educativos.
+Se puede observar que hay meses 5 meses con una ganancia promedio superiores a los $50,000,000, estos meses son Mayo, Junio, Julio y Noviembre y Diciembre. Una posible causa es que coinciden con épocas de vacaciones de ciclos educativos.
 
-**4.13 ¿En qué meses se han visto los lanzamientos con mejores ingresos? ¿cuantas películas, en promedio, se han lanzado por mes?**
+**4.13 ¿En qué meses se han visto los lanzamientos con mejores ingresos? ¿Cuantas películas, en promedio, se han lanzado por mes?**
 
 ```{r month releases, echo=FALSE}
 movies$Mes <- format(as.Date(movies$releaseDate), "%m")
@@ -408,7 +407,7 @@ Por mes se han sacado **`r promMonthMovies`** en promedio de los ultimos 30 año
 
 **4.14 ¿Cómo se correlacionan las calificaciones con el éxito comercial?**
 
-Las calificaciones de la película tiene una correlación muy debíl (r^2=0.14) con las ventas que génera.
+Las calificaciones de la película tiene una correlación muy debíl (r^2=0.14) con las ventas que genera.
 
 ```{r}
 CalificationRevenueCor <- cor(movies$voteAvg, movies$revenue, use = "complete.obs")
@@ -461,7 +460,7 @@ Por lo que se puede evidenciar en los cuadros, la estrategia de marketing que ge
 
 **4.16 ¿La popularidad del elenco está directamente correlacionada con el éxito de taquilla?**
 
-Las popularidad de los actores tiene una correlación muy debíl (r^2=0.08) con las ventas que génera una película.
+Las popularidad de los actores tiene una correlación muy débil (r^2=0.08) con las ventas que génera una película.
 ```{r}
 # Cleaning actorsPopularity column and handling NAs
 actorsPopularity <- suppressMessages(suppressWarnings(
@@ -469,7 +468,7 @@ actorsPopularity <- suppressMessages(suppressWarnings(
     select(id, title, revenue, actorsPopularity) %>%
     separate_rows(actorsPopularity, sep = "\\|") %>%
     mutate(actorsPopularity = as.numeric(actorsPopularity)) %>%
-    filter(!is.na(actorsPopularity)) %>%  # Remove NAs
+    filter(!is.na(actorsPopularity)) %>%  
     group_by(id, title, revenue) %>%
     summarise(row_average = mean(actorsPopularity, na.rm = TRUE), .groups = "drop")
 ))
@@ -531,7 +530,7 @@ kable(HigherVoteAvg)
 
 ```
 
-Se tomo en cuenta un limite minimo de presupuesto de 5000 dolares porque las peliculas no tan conocidas que no tenian presupuesto no pueden ser comparadas con peliculas que tuvieras muchos presupuestos.
+Se tomo en cuenta un límite mínimo de presupuesto de 5000 dólares porque las películas no tan conocidas que no tenian presupuesto no pueden ser comparadas con películas que tuvieras muchos presupuestos.
 
 Comparando ambas tablas el presupuesto no influye directamente en los votos que recibe cada película, no hay evidencia que afirme esto.
 
@@ -544,15 +543,15 @@ Comparando ambas tablas el presupuesto no influye directamente en los votos que 
 ```{r popularity-revenue, echo=FALSE}
 correlation <- cor(movies$popularity, movies$revenue, use = "complete.obs")
 suppressMessages(ggplot(movies, aes(x = popularity, y = revenue)) +
-  geom_point(alpha = 0.5, color = "blue") +  # Puntos dispersos
-  geom_smooth(method = "lm", color = "red", se = FALSE) +  # Línea de tendencia
+  geom_point(alpha = 0.5, color = "blue") +  
+  geom_smooth(method = "lm", color = "red", se = FALSE) + 
   theme_minimal() +
   labs(title = "Relación entre Popularidad e Ingresos",
        x = "Popularidad",
        y = "Ingresos (USD)"))
 ```
 
-Como se puede evidenciar en la Grafica no existe ninguna relación entre popularidad y el ingreso, teniendo una correlacion de `r correlation` indicando que la popularidad no es un buen predictor de ingresos.
+Como se puede evidenciar en la Grafica no existe ninguna relación entre popularidad y el ingreso, teniendo una correlación de `r correlation` indicando que la popularidad no es un buen predictor de ingresos.
 
 **3. ¿Cuáles son los países que producen más películas?**
 
@@ -575,10 +574,10 @@ ggplot(head(country_count, 10), aes(x = reorder(Pais, TotalPeliculas), y = Total
 
 ```
 
-Como se puede evidenciar **`r country_count[1,]$Pais`** es el pais con mas producciones de peliculas tenindo un total de **`r country_count[1,]$TotalPeliculas`**
+Como se puede evidenciar **`r country_count[1,]$Pais`** es el pais con mas producciones de películas tenindo un total de **`r country_count[1,]$TotalPeliculas`**
 
 **4. ¿Como el presupuesto afecta las ganancias?**
-El presupuesto esta fuertemente relacionadod (r^2=0.76) en los ingresos que puede recibir un largometraje. Como se vieron en las medidas anteriores como el promedio de calificaciones o el director influye muy poco (r^2=0.14 y r^2=0.08), esto nos puede sugerir que no es necesario tener estrellas de hollywood o criticos a favor, para tener un película exitosa, como tener medios económicos para hacer algo impactante.
+El presupuesto esta fuertemente relacionado (r^2=0.76) en los ingresos que puede recibir un largometraje. Como se vieron en las medidas anteriores como el promedio de calificaciones o el director influye muy poco (r^2=0.14 y r^2=0.08), esto nos puede sugerir que no es necesario tener estrellas de Hollywood o críticos a favor, para tener un película exitosa, como tener medios económicos para hacer algo impactante.
 
 ```{r}
 # Calculate correlation
@@ -598,7 +597,7 @@ ggplot(movies, aes(x = budget, y = revenue)) +
 ```
 
 **5. ¿Como la cantidad de productoras afecta las ganacias?**
-En las producción cinematográfica es común comisionar tareas a estudios terceros. La forma de esta gráfica se podría interpretar, en que el número de productoras coincide con mayores ingresos, hasta las 7, a partir de ahí los ingresos tienden a disminuir. Esto podría ser causado a que manejar una comunicación entre tantos equipos puede ser negativo para la producción creativa, además que puede involucrar mayores costos mantener tantos equipos.
+En las producción cinematográfica es común comisionar tareas a estudios terceros. La forma de esta gráfica se podría interpretar, en que el número de productoras coincide con mayores ingresos, hasta las siete, a partir de ahí los ingresos tienden a disminuir. Esto podría ser causado a que manejar la comunicación entre tantos equipos puede ser negativo para la producción creativa, además que puede involucrar mayores costos mantener tantos equipos.
 
 ```{r}
 avg_revenue_by_producers <- movies %>%
@@ -625,13 +624,13 @@ Frank Welker, es el actor que ha aparecido en más películas exitosas, esto pod
 top_actors <- suppressWarnings(movies %>%
   separate_rows(actors, sep = "\\|") %>%
   filter(
-    revenue > median(revenue, na.rm = TRUE),  # Only high-revenue movies
-    actors != "FALSE",                        # Remove invalid values
-    actors != "",                             # Remove empty actor names (if any)
-    !is.na(actors)                            # Remove NA values
+    revenue > median(revenue, na.rm = TRUE), 
+    actors != "FALSE",                        
+    actors != "",                             
+    !is.na(actors)                            
   ) %>%
   count(actors, sort = TRUE) %>%
-  slice(1))  # Get the top actor
+  slice(1)) 
 top_actors
 ```
 
