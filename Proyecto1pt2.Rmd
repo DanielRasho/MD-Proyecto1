@@ -4,13 +4,12 @@ output: html_document
 date: "2025-02-10"
 ---
 
-```{r setup, include=FALSE, message=FALSE,warning=FALSE}
+```{r setup, include=FALSE, message=FALSE,warning=FALSE, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
 library(cluster) #Para calcular la silueta
 library(e1071)#para cmeans
 library(mclust) #mixtures of gaussians
-library(fpc) #para hacer el plotcluster
 library(NbClust) #Para determinar el número de clusters óptimo
 library(factoextra) #Para hacer gráficos bonitos de clustering
 library(hopkins) #Para revisar si vale la pena hacer agrupamiento
@@ -18,11 +17,88 @@ library(GGally) #Para hacer el conjunto de graficos
 library(FeatureImpCluster) #Para revisar la importancia de las variables en los grupos.
 library(pheatmap) #Para hacer mapa de calor
 library(knitr)
+library(fpc)
 
 movies <- read.csv("./movies.csv")
 ```
 
-
+# Clustering
 ## Procesamiento del dataset
 
-##3 Hola
+Para este apartado se decidio calcular los grupos en base a todas las variables numericas, quitando todas las variables no son de este tipo. Para posteriormente poder clasificar o ver la forma en la que se relacionan las variables por medio de estas que fueron descartadas en un inicio.
+
+Las variables con las que se trabajara son:
+- popularity: 
+- Budget:
+- Revenue
+
+```{r data without string, echo=FALSE, message=FALSE}
+
+
+movies$actorsPopularityMean <- sapply(movies$actorsPopularity, function(x) {
+  values <- as.numeric(unlist(strsplit(x, "\\|")))
+  mean(values, na.rm = TRUE)
+})
+
+movies$castMenAmount <- as.numeric(movies$castMenAmount)
+
+movies$castWomenAmount <- as.numeric(movies$castWomenAmount)
+
+#datos <- movies[,c("popularity", "budget", "revenue", "runtime", "genresAmount", "productionCoAmount", "productionCountriesAmount", "voteCount", "voteAvg", "castMenAmount", "castWomenAmount")]
+
+datos <- movies[,c("popularity", "budget", "revenue", "runtime", "genresAmount", "voteCount", "voteAvg", "castMenAmount", "castWomenAmount")]
+
+
+datos <- scale(datos)
+datos <- na.omit(datos)
+
+
+set.seed(123)
+vhopkins <- hopkins(datos)
+```
+
+Primero necesitaremos verificar si vale la pena agrupar los datos. Usando el estadistico de hopkings nos dio un resultado de `r vhopkins`, lo que indica que los resultados no son aleatorios y hay una alta posibilidad de que sea factible el agrupamiento.
+
+Posteriormente se realizo un mapa de calor parar verificar si realmente existen patrones.
+```{r VAT, echo=FALSE}
+datos_dist<- dist(datos[1:1000,])
+fviz_dist(datos_dist, show_labels = F)
+```
+Como se puede observar en la gráfica observamos que hay cierta relaciones de los datos y a simple vista podemos observar que existen 3 formas de agrupar los datos
+
+
+```{r }
+wss=0
+for (i in 1:10) 
+  wss[i] <- sum(kmeans(datos[1:1000,], centers=i)$withinss)
+
+plot(1:10, wss, type="b", xlab="Number of Clusters",  ylab="Within groups sum of squares")
+```
+
+Se puede observar que en la grafica por los valores 2 - 4 se empieza a doblar el grafica por lo que se usara 3 el cual es un valor medio de estos dos
+
+```{r k medias}
+fviz_nbclust(datos[1:1000,], kmeans, method = "silhouette") +
+labs(subtitle = "Silhouette method")
+```
+
+```{r kmeans}
+km<-kmeans(datos,2,iter.max =100)
+#datos$
+#datos$grupoKm<-km$cluster
+```
+```{r k plot}
+plotcluster(datos,km$cluster)
+```
+
+
+```{r plot2}
+fviz_cluster(km, data = datos,geom = "point", ellipse.type = "norm")
+```
+
+
+
+```{r a}
+silkm<-silhouette(km$cluster,dist(datos))
+plot(silkm, cex.names=.4, col=1:3)
+```
