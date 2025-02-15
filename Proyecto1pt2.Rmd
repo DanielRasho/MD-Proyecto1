@@ -49,7 +49,7 @@ Las variables con las que se trabajara los clusters son:
 * voteAvg: Permite separar películas mejor o peor valoradas.
 * castMenAmount y castWomenAmount: Para analizar el tamaño del reparto y su diversidad.
 
-```{r data without string, echo=FALSE, message=FALSE, error=FALSE}
+```{r data without string, echo=FALSE, message=FALSE}
 
 
 movies$actorsPopularityMean <- sapply(movies$actorsPopularity, function(x) {
@@ -61,6 +61,7 @@ movies$castMenAmount <- as.numeric(movies$castMenAmount)
 
 movies$castWomenAmount <- as.numeric(movies$castWomenAmount)
 
+#datos <- movies[,c("popularity", "budget", "revenue", "runtime", "genresAmount", "productionCoAmount", "productionCountriesAmount", "voteCount", "voteAvg", "castMenAmount", "castWomenAmount")]
 
 datos <- movies[,c("popularity", "budget", "revenue", "runtime", "genresAmount", "voteCount", "voteAvg", "castMenAmount", "castWomenAmount")]
 
@@ -75,18 +76,15 @@ vhopkins <- hopkins(datos)
 
 Primero necesitaremos verificar si vale la pena agrupar los datos. Usando el estadistico de hopkings nos dio un resultado de `r vhopkins`, lo que indica que los resultados no son aleatorios y hay una alta posibilidad de que sea factible el agrupamiento.
 
-Posteriormente se realizo un mapa de calor parar verificar si realmente existen patrones.  
-
-```{r VAT, echo=FALSE, echo=FALSE}
+Posteriormente se realizo un mapa de calor parar verificar si realmente existen patrones.
+```{r VAT, echo=FALSE}
 datos_dist<- dist(datos[1:1000,])
 fviz_dist(datos_dist, show_labels = F)
 ```
-  
-Como se puede observar en la gráfica observamos que hay cierta relaciones de los datos y a simple vista podemos observar que existen 3 formas de agrupar los datos.  
+Como se puede observar en la gráfica observamos que hay cierta relaciones de los datos y a simple vista podemos observar que existen 3 formas de agrupar los datos
 
- 
 
-```{r cal num clusters, echo=FALSE}
+```{r }
 wss=0
 for (i in 1:10) 
   wss[i] <- sum(kmeans(datos[1:1000,], centers=i)$withinss)
@@ -94,9 +92,9 @@ for (i in 1:10)
 plot(1:10, wss, type="b", xlab="Number of Clusters",  ylab="Within groups sum of squares")
 ```
 
-Se puede observar que en la grafica por los valores 2 - 4 se empieza a doblar el grafica por lo que al probar por medio de varias iteraciones logramos encontrar que para k means el mejor numero de grupos es 2.
+Se puede observar que en la grafica por los valores 2 - 4 se empieza a doblar el grafica por lo que se usara 3 el cual es un valor medio de estos dos
 
-```{r k medias, echo=FALSE}
+```{r k medias}
 fviz_nbclust(datos[1:1000,], kmeans, method = "silhouette") +
 labs(subtitle = "Silhouette method")
 ```
@@ -121,6 +119,19 @@ plotcluster(dataWithoutGroups,km$cluster)
 
 ```{r plot cluster groups 2, echo=FALSE}
 fviz_cluster(km, data = dataWithoutGroups,geom = "point", ellipse.type = "norm")
+```
+```{r kmeans}
+km<-kmeans(datos,2,iter.max =100)
+#datos$
+#datos$grupoKm<-km$cluster
+```
+```{r k plot}
+plotcluster(datos,km$cluster)
+```
+
+
+```{r plot2}
+fviz_cluster(km, data = datos,geom = "point", ellipse.type = "norm")
 ```
 
 
@@ -229,6 +240,11 @@ ggplot(movies, aes(x = as.factor(grupoKm), y = actorsPopularityMean, fill = as.f
   theme_minimal()
 
 ```
+```{r a}
+silkm<-silhouette(km$cluster,dist(datos))
+plot(silkm, cex.names=.4, col=1:3)
+```
+
 --- 
 
 # Analisis por Componentes principales
