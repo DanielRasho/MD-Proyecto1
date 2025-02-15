@@ -33,7 +33,9 @@ library(factoextra)
 library(corrplot)
 library(PCAmixdata)
 library(paran)
+library(tidyr)
 
+#movies <- read.csv("./movies.csv", fileEncoding = "UTF-8", stringsAsFactors = FALSE)
 movies <- read.csv("./movies.csv")
 ```
 
@@ -43,14 +45,14 @@ movies <- read.csv("./movies.csv")
 Para este apartado se decidio calcular los grupos en base a todas las variables numericas, quitando todas las variables no son de este tipo. Para posteriormente poder clasificar o ver la forma en la que se relacionan las variables por medio de estas que fueron descartadas en un inicio.
 
 Las variables con las que se trabajara los clusters son:  
-* popularity: Importante para agrupar películas por impacto mediático.
-* Budget: Ayuda a diferenciar producciones de alto y bajo costo.
-* Revenue: Relacionado con el éxito comercial.
-* runtime: Útil para agrupar películas cortas vs. largas.
-* genresAmount: Más géneros pueden significar una audiencia más diversa.
-* voteCount: Relacionado con la cantidad de personas que la vieron.
-* voteAvg: Permite separar películas mejor o peor valoradas.
-* castMenAmount y castWomenAmount: Para analizar el tamaño del reparto y su diversidad.
+* *popularity*: Importante para agrupar películas por impacto mediático.
+* *Budget*: Ayuda a diferenciar producciones de alto y bajo costo.
+* *Revenue*: Relacionado con el éxito comercial.
+* *runtime*: Útil para agrupar películas cortas vs. largas.
+* *genresAmount*: Más géneros pueden significar una audiencia más diversa.
+* *voteCount*: Relacionado con la cantidad de personas que la vieron.
+* *voteAvg*: Permite separar películas mejor o peor valoradas.
+* *castMenAmount y castWomenAmount*: Para analizar el tamaño del reparto y su diversidad.
 
 ```{r data without string, echo=FALSE, message=FALSE}
 
@@ -138,12 +140,10 @@ plot(silkm, cex.names=.4, col=1:3)
 ```{r k-means2, echo=FALSE}
 km <- kmeans(datos, centers = 2, iter.max = 100)
 
-# Convertir a data.frame si es necesario
 if (!is.data.frame(datos)) {
   datos <- as.data.frame(datos)
 }
 
-# Agregar la columna con los clusters
 datos$grupoKm <- as.factor(km$cluster)
 
 dataWithoutGroups <- subset(datos, select = -grupoKm)
@@ -171,22 +171,13 @@ plot(hc, cex=0.5, axes=FALSE)
 rect.hclust(hc,k=3)
 ```
 
+
 Aunque con k=2 la silueta fue mejor en K-means, al analizar el dendrograma del clustering jerárquico, se observó que una división natural ocurre en tres grupos. Esto sugiere que, en lugar de forzar una separación en dos clusters, el modelo jerárquico es capaz de detectar subestructuras en los datos que K-means no capturó.
 
-```{r jerarquico, echo=FALSE}
-#groups<-cutree(hc,k=3)
-
-#datos$gruposHC<-groups
-
-
-#table(groups)
+```{r}
+groups <- cutree(hc, k=3)
+datos$gruposHC <- groups
 ```
-
-```{r silueta jerarquico, echo=FALSE}
-silhc<-silhouette(groups,datos_dist)
-mean(silhc[,3]) 
-```
-
 
 ```{r grafica, echo=FALSE}
 plot(silhc, cex.names=.4, col=1:3)
@@ -194,7 +185,7 @@ plot(silhc, cex.names=.4, col=1:3)
 ```
 
 
-## Interpretacion del clustering
+## Interpretacion de los clusterings
 
 *Comparación de resultados:*
 ```{r comparacion}
@@ -208,7 +199,6 @@ tabla_resultados <- data.frame(
   )
 )
 
-# Mostrar la tabla en formato bonito en RMarkdown
 kable(tabla_resultados)
 ```
 
@@ -249,18 +239,33 @@ kable(summary_by_groupHC %>% dplyr::select(all_of(variables_importantes)))
 ```
 
 
-K mean por el meotdo de la silueta le quedaba de mejor forma organizarse en 2 grupos y cluster jerarquico por este mismo metodo le quedaba de mejor forma organizarse en 3 grupos.
+Dado que cada algoritmo mostró un mejor desempeño con un número distinto de clusters, analizamos cómo se comportan los grupos generados en términos de las variables clave.
 
-Teniendo eso en cuenta analizamos procedemos a analizar.
+En general, los resultados de ambos métodos presentan distribuciones similares en algunas variables. Sin embargo, se observan diferencias significativas en presupuesto (budget) e ingresos (revenue). En el caso de k-means (k=2), los grupos reflejan una clara segmentación entre películas de mayor y menor presupuesto, con una diferencia notable en los ingresos generados.
 
-Por lo que se puede observar en el resumen de ambos grupos, los dos metodos tuvieron distribuciones bastante parecidas menos por el presupuesto y los ingresos, los cuales por claras razones de ser 3 y 2 en el cluster jerarquico estan un poco mejor distribuidas.
+Por otro lado, el clustering jerárquico (k=3) permite una segmentación más detallada, diferenciando un tercer grupo con películas de menor presupuesto y menor recaudación. Esta estructura ayuda a capturar mejor la diversidad de los datos, distribuyendo de manera más homogénea las películas en función de sus recursos financiero.
+
+Comparando un poco mas los dos metodos:
+
+En cuanto al presupuesto e ingresos, el método jerárquico logra una mejor diferenciación, incorporando un grupo adicional de películas con un presupuesto bajo (7.3M) y una recaudación igualmente baja (17.9M), lo que no ocurre en k-means, donde la segmentación es más binaria.
+
+Ademas, la Duración de la película no parece tener diferencias significativas entre métodos, con un promedio cercano a los 100-110 minutos en la mayoría de los grupos.
+
+Tambien, en cuanto a la popularidad no se encuentran diferencias significativas.
+
+## eleccion de un metodo
+
+A pesar de que K-means con k=2 obtuvo un índice de silueta superior (0.55 frente a 0.51 del clustering jerárquico con k=3), se optó por utilizar el clustering jerárquico debido a su capacidad para capturar mayor variabilidad en los datos. El clustering jerárquico con k=3 permitió una clasificación más detallada, identificando un grupo intermedio que representa películas de presupuesto medio. Esta segmentación más rica facilita un análisis más preciso de las tendencias dentro de la industria cinematográfica, asegurando que las diferencias dentro de los datos sean mejor representadas. Por lo tanto, se eligió el clustering jerárquico para el análisis de tendencias centrales y frecuencias, ya que proporciona una interpretación más equilibrada sin perder información valiosa.
 
 ```{r prespuesto vs revenues, echo=FALSE, warning=FALSE, error=FALSE}
-ggplot(movies, aes(x = budget, y = revenue, color = as.factor(grupoKm))) +
+ggplot(movies, aes(x = budget, y = revenue, color = as.factor(grupoHC))) +
   geom_point(alpha = 0.6) +
-  labs(title = "Relación entre Presupuesto y Revenue por Cluster", x = "Presupuesto", y = "Revenue") +
+  labs(title = "Relación entre Presupuesto e Ingresos por grupo", x = "Presupuesto", y = "Ingresos") +
   theme_minimal()
 ```
+
+En la grafica se puede observar las películas en función de su presupuesto e ingresos. El grupo 1 tiene la mayor diversidad, mientras que los grupos 2 y 3 presentan características más específicas en términos de inversión y rentabilidad. Esta segmentación es útil para entender la relación entre el presupuesto y el éxito financiero.
+
 
 ```{r actor popularidad, echo=FALSE, warning=FALSE, error=FALSE}
 
@@ -269,12 +274,85 @@ movies$actorsPopularityMean <- sapply(movies$actorsPopularity, function(x) {
   mean(values, na.rm = TRUE)
 })
 
-ggplot(movies, aes(x = as.factor(grupoKm), y = actorsPopularityMean, fill = as.factor(grupoKm))) +
+ggplot(movies, aes(x = as.factor(grupoHC), y = actorsPopularityMean, fill = as.factor(grupoHC))) +
   geom_boxplot() +
   labs(title = "Popularidad Promedio del Elenco por Cluster", x = "Cluster", y = "Media de Popularidad Actores") +
   theme_minimal()
 
 ```
+
+Dado que la variable popularidad promedio del elenco no fue incluida en la formación de los clusters, es esperable que no haya una diferenciación clara entre los grupos con respecto a esta variable. Esto sugiere que la popularidad del elenco no estuvo directamente relacionada con los criterios de agrupamiento utilizados en el modelo.
+
+```{r something}
+genre_distribution <- movies_genres %>%
+  group_by(grupoHC, genres) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  pivot_wider(names_from = grupoHC, values_from = count, values_fill = 0)
+
+colnames(genre_distribution) <- c("Generos", "Grupo 1", "Grupo 2", "Grupo 3")
+kable(genre_distribution)
+
+```
+
+A partir de esta tabla podemos obtener que el Grupo 1 contiene la mayor diversidad y volumen de películas, lo que sugiere que es el cluster que abarca las producciones más comerciales y ampliamente distribuidas. El Grupo 2 es intermedio, con una presencia menor en todos los géneros, posiblemente representando películas con menor presupuesto o enfoque más específico.El Grupo 3 es el más reducido y especializado, con películas menos comerciales y potencialmente más orientadas a audiencias específicas, como documentales, cine independiente.
+
+```{r distribution director}
+#grupoHC
+movies$director <- iconv(movies$director, from = "latin1", to = "UTF-8", sub = "")
+
+moviesDirectors <- movies %>%
+  filter(director != "" & !is.na(director))
+
+# Separar los directores y contar ocurrencias por grupo
+director_distribution <- moviesDirectors %>%
+  separate_rows(director, sep = "\\|") %>%
+  group_by(grupoHC, director) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  arrange(grupoHC, desc(count)) %>%
+  group_by(grupoHC) %>%
+  slice_max(order_by = count, n = 3)
+
+# Mostrar en formato tabla
+colnames(director_distribution) <- c("Grupo", "Director", "Conteo")
+kable(director_distribution)
+```
+
+Se puede observar que en lso distintos grupos se presentan las siguientes caracteristicas: Cluster 1 agrupa a directores con una gran cantidad de películas, lo que podría significar que son responsables de sagas largas o producciones constantes. Cluster 2 contiene directores con menor volumen de películas pero con gran impacto cinematográfico.Cluster 3 tiene directores menos recurrentes en la base de datos, lo que sugiere películas más variadas en dirección.
+
+
+```{r calificaciones, echo=FALSE, warning=FALSE}
+avgRating <- movies %>%
+  group_by(grupoHC) %>%
+  summarise(avg_rating = mean(voteAvg, na.rm = TRUE)) %>%
+  arrange(desc(avg_rating))
+
+colnames(avgRating) <- c("Grupo", "Calificacion Promedio")
+
+kable(avgRating)
+```
+
+Si bien la diferencia no es tan notable, cuando se habla de calificaciones, esta minima diferencia puede indicar factores. Se puede observar que las películas en el Grupo 2 pueden tener características que favorecen una mejor recepción por parte del público, como mayor presupuesto, actores reconocidos o mejor producción. Por otro lado, el Grupo 1, al tener la calificación más baja, podría estar compuesto por películas con menor impacto crítico.
+
+## Conclusiones
+
+Basado en esta informacion se pudo detectar puntos clave: 
+
+* Grupo 1: son peliculas de bajo presupuesto con un alto rendimiento
+  - Estas tienen un bajo presupuesto pero presentan un gran ingreso
+  - Los generos predominantes son: Horror, Thriller, Drama (películas de bajo costo suelen ser rentables en estos géneros).
+  - Directores menos conocidos.
+  - Como se pudo observar en las calificaciones fue el menor impacto, porque estas peliculas no apuntan del todo a ser las mejores calificadas.
+  - Si se quisiera hacer inversiones este grupo seria el mejor por su bajo presupuesto y gran recaudacion.
+* Grupo 2: Blockbusters con Altos Presupuestos y Grandes Ingresos
+ - Estas peliculas tienen alto presupuesto y gran ingreso
+ - Géneros predominantes: Acción, Aventura, Ciencia Ficción.
+ - Directores reconocidos: Spielberg, Zemeckis, Tim Burton.
+ - Teniendo las peliculas mejores calificaciones.
+ - Al ser Blockbusters aqui se podrian maximizar ingresos para tener franquicias o secuelas. Pero con riego financiero porque tienen un alto presupuesto y si fracasan seria una gran perdida.
+* Grupo 3: Producciones de Bajo Presupuesto y Bajo Rendimiento
+ - Bajo presupuesto y bajo ingreso.
+ - Géneros variados y películas independientes.
+ - Este grupo de peliculas al ser menor pueden beneficiarse de modelos de distribución en streaming o festivales.
 
 --- 
 
