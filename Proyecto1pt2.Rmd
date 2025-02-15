@@ -303,7 +303,6 @@ movies$director <- iconv(movies$director, from = "latin1", to = "UTF-8", sub = "
 moviesDirectors <- movies %>%
   filter(director != "" & !is.na(director))
 
-# Separar los directores y contar ocurrencias por grupo
 director_distribution <- moviesDirectors %>%
   separate_rows(director, sep = "\\|") %>%
   group_by(grupoHC, director) %>%
@@ -312,7 +311,6 @@ director_distribution <- moviesDirectors %>%
   group_by(grupoHC) %>%
   slice_max(order_by = count, n = 3)
 
-# Mostrar en formato tabla
 colnames(director_distribution) <- c("Grupo", "Director", "Conteo")
 kable(director_distribution)
 ```
