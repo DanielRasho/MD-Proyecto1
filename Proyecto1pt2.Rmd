@@ -3,8 +3,8 @@ title: "Proyecto1"
 author: "Gerardo Pineda 22880, Daniel Rayo 22933"
 date: "2025-02-10"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
   word_document: default
 ---
 
@@ -34,6 +34,8 @@ library(corrplot)
 library(PCAmixdata)
 library(paran)
 library(tidyr)
+library(arules)
+library(arulesViz)
 
 #movies <- read.csv("./movies.csv", fileEncoding = "UTF-8", stringsAsFactors = FALSE)
 movies <- read.csv("./movies.csv")
@@ -177,6 +179,7 @@ Aunque con k=2 la silueta fue mejor en K-means, al analizar el dendrograma del c
 ```{r}
 groups <- cutree(hc, k=3)
 datos$gruposHC <- groups
+silhc <- silhouette(groups, datos_dist) 
 ```
 
 ```{r grafica, echo=FALSE}
@@ -284,6 +287,9 @@ ggplot(movies, aes(x = as.factor(grupoHC), y = actorsPopularityMean, fill = as.f
 Dado que la variable popularidad promedio del elenco no fue incluida en la formación de los clusters, es esperable que no haya una diferenciación clara entre los grupos con respecto a esta variable. Esto sugiere que la popularidad del elenco no estuvo directamente relacionada con los criterios de agrupamiento utilizados en el modelo.
 
 ```{r something}
+movies_genres <- movies %>%
+  separate_rows(genres, sep = "\\|")
+
 genre_distribution <- movies_genres %>%
   group_by(grupoHC, genres) %>%
   summarise(count = n(), .groups = "drop") %>%
@@ -316,6 +322,8 @@ kable(director_distribution)
 ```
 
 Se puede observar que en lso distintos grupos se presentan las siguientes caracteristicas: Cluster 1 agrupa a directores con una gran cantidad de películas, lo que podría significar que son responsables de sagas largas o producciones constantes. Cluster 2 contiene directores con menor volumen de películas pero con gran impacto cinematográfico.Cluster 3 tiene directores menos recurrentes en la base de datos, lo que sugiere películas más variadas en dirección.
+
+
 
 
 ```{r calificaciones, echo=FALSE, warning=FALSE}
@@ -418,3 +426,51 @@ fviz_pca_var(compPrinc, col.var = "cos2",
 )
 
 ```
+
+
+# Reglas de asociación
+
+```{r}
+movies <- movies %>%
+  dplyr::select(-id, -originalTitle, -originalLanguage, -title, -homePage, -video, -productionCompanyCountry, -director, -productionCompany, -genres, -productionCountry, -actorsPopularity, -actors, -actorsCharacter, -releaseDate)
+
+```
+
+```{r discretizar}
+
+movies$popularity <- discretize(movies$popularity, method = "interval", categories = 4)
+movies$budget <- discretize(movies$budget, method = "interval", categories = 4)
+movies$revenue <- discretize(movies$revenue, method = "interval", categories = 4)
+movies$runtime <- discretize(movies$runtime, method = "interval", categories = 4)
+movies$voteCount <- discretize(movies$voteCount, method = "interval", categories = 4)
+movies$voteAvg <- discretize(movies$voteAvg, method = "interval", categories = 4)
+# -----
+# Estas variables tienen que ser factor pero aun no lo implemento
+
+#movies$actorsPopularity <- discretize(movies$actorsPopularity, method = "interval", categories = 4)
+#movies$actorsAmount <- discretize(movies$actorsAmount, method = "interval", categories = 4)
+# ----- 
+
+# Tanto para women como men cuando encuentra un valor NA lo que hace es ponerle la mediana
+movies$castWomenAmount[is.na(movies$castWomenAmount)] <- median(movies$castWomenAmount, na.rm = TRUE)
+
+movies$castMenAmount[is.na(movies$castMenAmount)] <- median(movies$castMenAmount, na.rm = TRUE)
+
+```
+
+```{r}
+movies_matrix <- as(movies, "transactions")
+#summary(movies_matrix)
+
+```
+
+```{r}
+rules <- apriori(movies_matrix, parameter = list(supp = 0.01, conf = 0.5, minlen = 2))
+
+```
+```{r}
+inspect(rules[1:10])
+
+```
+
+
