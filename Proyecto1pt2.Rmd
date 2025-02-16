@@ -452,9 +452,15 @@ movies$voteAvg <- discretize(movies$voteAvg, method = "interval", categories = 4
 # ----- 
 
 # Tanto para women como men cuando encuentra un valor NA lo que hace es ponerle la mediana
-movies$castWomenAmount[is.na(movies$castWomenAmount)] <- median(movies$castWomenAmount, na.rm = TRUE)
+movies$castWomenAmount <- as.numeric(movies$castWomenAmount)
+movies$castMenAmount <- as.numeric(movies$castMenAmount)
 
+# Reemplazar NA con la mediana de la columna
+movies$castWomenAmount[is.na(movies$castWomenAmount)] <- median(movies$castWomenAmount, na.rm = TRUE)
 movies$castMenAmount[is.na(movies$castMenAmount)] <- median(movies$castMenAmount, na.rm = TRUE)
+
+movies$castWomenAmount <- discretize(movies$castWomenAmount, method = "interval", categories = 4)
+movies$castMenAmount <- discretize(movies$castMenAmount, method = "interval", categories = 4)
 
 ```
 
@@ -464,13 +470,34 @@ movies_matrix <- as(movies, "transactions")
 
 ```
 
+## Pruebas de diferentes valores de soporte y confianza
+
 ```{r}
 rules <- apriori(movies_matrix, parameter = list(supp = 0.01, conf = 0.5, minlen = 2))
+rules_sorted <- sort(rules, by="confidence", decreasing=TRUE)
+rules_top <- rules_sorted[1:10] 
+inspect(rules_top)
 
 ```
 ```{r}
 inspect(rules[1:10])
+length(rules)
 
+rules <- apriori(movies_matrix, parameter = list(supp = 0.01, conf = 0.6, minlen = 2))
+length(rules)
+
+rules <- apriori(movies_matrix, parameter = list(supp = 0.02, conf = 0.6, minlen = 2))
+rules_sorted <- sort(rules, by="confidence", decreasing=TRUE)
+rules_top <- rules_sorted[1:10] 
+inspect(rules_top)
+```
+## Reglas con los mejor valores encontrados
+```{r}
+rules <- apriori(movies_matrix, parameter = list(supp = 0.05, conf = 0.6, minlen = 2))
+rules_sorted <- sort(rules, by="confidence", decreasing=TRUE)
+rules_top <- rules_sorted[1:10] 
+inspect(rules_top)
 ```
 
 
+Lo que se puede interpretar de estas reglas (de la 1 a las 4) es que en las peliculas con calificaciones bajas (entre 3.47 y 5.65) tienden a tener un numero bajo de votos, generan menos ingresos, tienen una duracion moderada y a ser menos pupulares. Ademas, en las reglas (5 y 6) Las peliculas con 0 a 2 generos suelen tener menor recaudacion y menos popularidad. Reglas (7-8) las peliculas con mas actores tienden a tener la misma cantidad de actores masculinos como femeninos y las peliculas con menos actores suelen producirse en menos paises.
